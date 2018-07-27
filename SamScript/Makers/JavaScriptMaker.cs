@@ -8,7 +8,7 @@ using SamScript.Compile.Tokens;
 
 namespace SamScript.Makers
 {
-    public class VbNetMaker : IMaker
+    public class JavaScriptMaker : IMaker
     {
         public Compiler _compiler;
         public void Make(Compiler compiler)
@@ -22,18 +22,22 @@ namespace SamScript.Makers
 
         public void MakeField(SamFileField field, StringBuilder builder)
         {
-            builder.Append("\tPublic ");
+            builder.Append("\t");
             if (field.IsStatic)
-                builder.Append("Shared ");
+                builder.Append("static ");
 
-            builder.Append($"{field.Name} As {field.Type}");
+            builder.Append($"var {field.Name}; // Native Type {field.Type}");
         }
 
         public void MakeFile(SamFile file)
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"Public Class {file.Name}");
+            builder.AppendLine("\"use strict\";");
+            builder.AppendLine();
+            builder.AppendLine($"class {file.Name}");
+            builder.AppendLine("{");
             bool HasContent = false;
+
             if (file.Fields != null)
             {
                 foreach (var item in file.Fields)
@@ -49,6 +53,7 @@ namespace SamScript.Makers
             if (file.Methods != null)
             {
                 var first = file.Methods.FirstOrDefault();
+
                 foreach (var item in file.Methods)
                 {
                     if (HasContent)
@@ -58,36 +63,42 @@ namespace SamScript.Makers
                 }
             }
 
-            builder.AppendLine("End Class");
+            builder.AppendLine("}");
 
-            _compiler.ToOutput(file, builder, ".vb");            
+            _compiler.ToOutput(file, builder, ".js");
         }
 
         public void MakeMethod(SamFileMethod method, StringBuilder builder)
         {
-            builder.Append("\tPublic ");
-            if (method.IsStatic)
-                builder.Append("Shared ");
-            string methodType = (method.Type == "void" ? "Sub" : "Function");
-            builder.Append($"{methodType} {method.Name}(");
-
             foreach (var item in method.Arguments)
             {
-                builder.Append($"{item.Name} As {item.Type}, ");
+                builder.AppendLine($"// {item.Type} {item.Name}");
             }
+            builder.AppendLine($"// Return: {method.Type} ");
+
+            builder.Append("\t");
+            if (method.IsStatic)
+                builder.Append("static ");
+
+            builder.Append($"{method.Name}(");
+
+            
+            foreach (var item in method.Arguments)
+            {
+                builder.Append($"{item.Name}, ");
+            }
+
             if (method.Arguments.Count > 0)
                 builder.Length -= 2; // remove ", "
 
             builder.Append(")");
-            if(method.Type != "void")
-                builder.Append($" As {method.Type}");
-            //builder.AppendLine();
             builder.AppendLine();
+            builder.AppendLine("\t{");
             builder.Append("\t\t");
             // build body.
             MakeMethodBody(method, builder);
 
-            builder.AppendLine($"\tEnd {methodType}");
+            builder.AppendLine("\t}");
         }
 
         public void MakeMethodBody(SamFileMethod method, StringBuilder builder)
@@ -102,13 +113,12 @@ namespace SamScript.Makers
                 {
                     if (func.FuncName == "Write" || func.FuncName == "WriteLine")
                     {
-                        builder.Append($"System.Console.{func.FuncName}(");
+                        builder.Append("console.log(");
                     }
                     else
                     {
                         builder.Append(func.FuncName);
-                    }
-                    
+                    }                    
                 }
                 else if (item is EndCallFuncToken)
                 {
@@ -120,7 +130,7 @@ namespace SamScript.Makers
                 }
                 else if (item is EndOfLineToken)
                 {
-                    //builder.Append(";");
+                    builder.Append(";");
                     builder.AppendLine();
                     if (item != lastToken)
                         builder.Append(tabs);
@@ -128,10 +138,6 @@ namespace SamScript.Makers
                 else if (item is LoadVariableToken varToken)
                 {
                     builder.Append(varToken.Name);
-                }
-                else if (item is EqualToken)
-                {
-                    builder.Append("=");
                 }
             }
         }

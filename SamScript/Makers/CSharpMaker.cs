@@ -22,7 +22,11 @@ namespace SamScript.Makers
 
         public void MakeField(SamFileField field, StringBuilder builder)
         {
-            throw new NotImplementedException();
+            builder.Append("\tpublic ");
+            if (field.IsStatic)
+                builder.Append("static ");
+
+            builder.Append($"{field.Type} {field.Name};");
         }
 
         public void MakeFile(SamFile file)
@@ -30,24 +34,30 @@ namespace SamScript.Makers
             var builder = new StringBuilder();
             builder.AppendLine($"public class {file.Name}");
             builder.AppendLine("{");
+            bool HasContent = false;
 
             if (file.Fields != null)
             {
                 foreach (var item in file.Fields)
                 {
+                    if (HasContent)
+                        builder.AppendLine();
                     MakeField(item, builder);
+                    HasContent = true;
                 }
             }
-
+            if (HasContent)
+                builder.AppendLine();
             if (file.Methods != null)
             {
                 var first = file.Methods.FirstOrDefault();
 
                 foreach (var item in file.Methods)
                 {
-                    if (first != item)
+                    if (HasContent)
                         builder.AppendLine();
                     MakeMethod(item, builder);
+                    HasContent = true;
                 }
             }
 
@@ -114,6 +124,13 @@ namespace SamScript.Makers
                     builder.AppendLine();
                     if (item != lastToken)
                         builder.Append(tabs);
+                }
+                else if (item is LoadVariableToken varToken)
+                {
+                    builder.Append(varToken.Name);
+                }else if (item is EqualToken)
+                {
+                    builder.Append("==");
                 }
             }
         }

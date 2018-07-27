@@ -22,31 +22,48 @@ namespace SamScript.Makers
 
         public void MakeField(SamFileField field, StringBuilder builder)
         {
-            throw new NotImplementedException();
+            builder.Append("\tpublic ");
+            if (field.IsStatic)
+                builder.Append("static ");
+
+            builder.Append($"{ConvertNetTypeToJava(field.Type)} {field.Name};");
+        }
+
+        private string ConvertNetTypeToJava(string type)
+        {
+            if (type == "string")
+                return "String";
+            else
+                return type;
         }
 
         public void MakeFile(SamFile file)
         {
             var builder = new StringBuilder();
             builder.AppendLine($"public class {file.Name} " + "{");
-          
+            bool HasContent = false;
             if (file.Fields != null)
             {
                 foreach (var item in file.Fields)
                 {
+                    if (HasContent)
+                        builder.AppendLine();
                     MakeField(item, builder);
+                    HasContent = true;
                 }
             }
-
+            if (HasContent)
+                builder.AppendLine();
             if (file.Methods != null)
             {
                 var first = file.Methods.FirstOrDefault();
 
                 foreach (var item in file.Methods)
                 {
-                    if (first != item)
+                    if (HasContent)
                         builder.AppendLine();
                     MakeMethod(item, builder);
+                    HasContent = true;
                 }
             }
 
@@ -63,11 +80,11 @@ namespace SamScript.Makers
             if (method.Name == "Main")
                 method.Name = "main";
 
-            builder.Append($"{method.Type} {method.Name}(");
+            builder.Append($"{ConvertNetTypeToJava(method.Type)} {method.Name}(");
 
             foreach (var item in method.Arguments)
             {
-                builder.Append($"{item.Type} {item.Name}, ");
+                builder.Append($"{ConvertNetTypeToJava(item.Type)} {item.Name}, ");
             }
             if (method.Arguments.Count > 0)
                 builder.Length -= 2; // remove ", "
@@ -118,6 +135,14 @@ namespace SamScript.Makers
                     builder.AppendLine();
                     if (item != lastToken)
                         builder.Append(tabs);
+                }
+                else if (item is LoadVariableToken varToken)
+                {
+                    builder.Append(varToken.Name);
+                }
+                else if (item is EqualToken)
+                {
+                    builder.Append("==");
                 }
             }
         }

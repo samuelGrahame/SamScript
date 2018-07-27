@@ -20,16 +20,16 @@ namespace SamScript.Compile
             {
                 Directory.CreateDirectory(plusOut);
             }
-            string subFolders = file.File.Substring(ProjectRootDirectory.Length);
+            string subFolders = Path.GetDirectoryName(file.File).Substring(ProjectRootDirectory.Length);
             string start;
-            if (subFolders != "\\" + Path.GetFileName(file.File))
+            if (subFolders != "")
             {
                 subFolders = subFolders.Substring(1);
                 start = Path.Combine(plusOut, subFolders);
 
-                if (!Directory.Exists(Path.GetDirectoryName(start)))
+                if (!Directory.Exists(start))
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(start));
+                    Directory.CreateDirectory(start);
                 }
             }
             else
@@ -140,6 +140,7 @@ namespace SamScript.Compile
                         else if (tr.Next == "=")
                         {
                             // this is a set call..
+                            continue;
                         }
                     }
 
@@ -150,8 +151,16 @@ namespace SamScript.Compile
                         softLevel--;
                         if (softLevel < 0)
                             return false; // strange, why do we have a closing brace and no open one??
+                    }else if(tr.Current == "==")
+                    {
+                        method.Tokens.Add(new EqualToken());
                     }
+                    else
+                    {
+                        // just add...
 
+                        method.Tokens.Add(new LoadVariableToken() { Name = tr.Current });
+                    }
 
                     // code..
                 }

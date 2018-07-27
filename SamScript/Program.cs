@@ -27,7 +27,8 @@ namespace SamScript
                     new JavaMaker().Make(compiler);
                     new CSharpMaker().Make(compiler);
                     new VbNetMaker().Make(compiler);
-                    
+                    new JavaScriptMaker().Make(compiler);
+
                     Console.WriteLine("Build successfully...");
                 }
                 else
