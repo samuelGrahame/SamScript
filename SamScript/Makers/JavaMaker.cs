@@ -115,6 +115,9 @@ namespace SamScript.Makers
                     else if (func.FuncName == "WriteLine")
                     {
                         builder.Append("System.out.println(");
+                    }else if (func.FuncName == "Equals")
+                    {
+                        builder.Append("equals(");
                     }
                     else
                     {
