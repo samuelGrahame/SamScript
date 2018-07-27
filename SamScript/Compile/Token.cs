@@ -4,8 +4,8 @@ using System.Text;
 
 namespace SamScript.Compile
 {
-    public class SamFileMethod : SamFileField
+    public class Token
     {
-        public List<Token> Tokens = new List<Token>();
+
     }
 }

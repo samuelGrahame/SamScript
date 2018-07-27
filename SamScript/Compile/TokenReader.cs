@@ -107,7 +107,9 @@ namespace SamScript.Compile
         }
 
         public string Current { get { return Words[_pos]; } }
-        
+        public bool CanMoveNext { get { return _pos < Words.Length; } }
+        public string Next { get { return Words[_pos + 1]; } }
+
         public decimal GetValue()
         {
             return decimal.Parse(Words[_pos]);

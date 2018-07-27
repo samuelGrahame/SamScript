@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SamScript.Compile.Tokens;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -52,9 +53,15 @@ namespace SamScript.Compile
             NeedName
         }
 
+        private bool IsStringLiteral(string value)
+        {
+            return !string.IsNullOrWhiteSpace(value) && value.StartsWith('"') && value.EndsWith('"');
+        }
+
         private bool CompileMethodBody(SamFile file, TokenReader tr, SamFileMethod method)
         {
             int level = 0;
+            int softLevel = 0;
             do
             {
                 if (tr.Current == "{")
@@ -71,6 +78,53 @@ namespace SamScript.Compile
                 }
                 else
                 {
+                    string value = tr.Current;
+
+                    if(value == ";")
+                    {
+                        method.Tokens.Add(new EndOfLineToken());
+                        continue;
+                    }
+
+                    if(IsStringLiteral(value))
+                    {
+                        // maybe remove quotes.
+                        method.Tokens.Add(new StringLiteralToken() { Value = value });
+                        continue;
+                    }
+
+                    // is a function
+                    if(tr.CanMoveNext)
+                    {
+                        if(tr.Next == "(")
+                        {
+                            // this is a func call..
+                            var callFunc = new CallFuncToken() { FuncName = value };
+
+                            method.Tokens.Add(callFunc);
+                            softLevel++;
+
+                            tr.MoveNext();
+
+                            continue;
+
+                        }
+                        else if (tr.Next == "=")
+                        {
+                            // this is a set call..
+                        }
+                    }
+
+                    if(tr.Current == ")")
+                    {
+                        method.Tokens.Add(new EndCallFuncToken());
+
+                        softLevel--;
+                        if (softLevel < 0)
+                            return false; // strange, why do we have a closing brace and no open one??
+                    }
+
+
                     // code..
                 }
             } while (tr.MoveNext());
