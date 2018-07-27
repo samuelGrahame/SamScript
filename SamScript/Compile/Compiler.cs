@@ -11,6 +11,35 @@ namespace SamScript.Compile
     {
         public string ProjectRootDirectory;
         public CompilerOutput Output = CompilerOutput.Javascript;
+        public List<SamFile> Files = new List<SamFile>();
+
+        public void ToOutput(SamFile file, StringBuilder builder, string extension)
+        {
+            string plusOut = Path.Combine(ProjectRootDirectory, "Output");
+            if (!Directory.Exists(plusOut))
+            {
+                Directory.CreateDirectory(plusOut);
+            }
+            string subFolders = file.File.Substring(ProjectRootDirectory.Length);
+            string start;
+            if (subFolders != "\\" + Path.GetFileName(file.File))
+            {
+                subFolders = subFolders.Substring(1);
+                start = Path.Combine(plusOut, subFolders);
+
+                if (!Directory.Exists(Path.GetDirectoryName(start)))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(start));
+                }
+            }
+            else
+            {
+                start = plusOut;
+            }
+
+            File.WriteAllText(Path.Combine(start, file.Name + extension), builder.ToString());
+
+        }
 
         public Compiler(string projectRootDirectory)
         {
@@ -24,8 +53,8 @@ namespace SamScript.Compile
                     return false;
 
             return true;
-        }
-
+        }  
+        
         private string[] GetCodeFiles(string directory)
         {
             return Directory.GetFiles(directory, "*.sam", SearchOption.AllDirectories);
@@ -38,13 +67,12 @@ namespace SamScript.Compile
                 File = file,
                 Name = Path.GetFileNameWithoutExtension(file)
             };
+            Files.Add(samFile);
 
             using (TokenReader tr = new TokenReader(File.ReadAllText(file)))
             {
-                CompileFieldsAndMethods(samFile, tr);
+                return CompileFieldsAndMethods(samFile, tr);
             }
-
-            return false;
         }
 
         private enum CompileFieldAndMethodsEnum
@@ -146,7 +174,10 @@ namespace SamScript.Compile
                 {
                     // read body...
                     if (tr.MoveNext())
+                    {
+                        method.Arguments = arguments;
                         return CompileMethodBody(file, tr, method);
+                    }                        
                     else
                         return false;
                 }
